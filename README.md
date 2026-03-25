@@ -490,16 +490,8 @@ Allowed Headers: *
 
 #### `application.properties`
 Controls database connection, JPA settings, and security defaults:
-```properties
-spring.application.name=gigscore
-spring.datasource.url=jdbc:mysql://localhost:3306/gigscore
-spring.datasource.username=root
-spring.datasource.password=Rpharish@1
-spring.jpa.hibernate.ddl-auto=update
-spring.jpa.show-sql=true
-```
 
-#### Environment Variables (for production)
+#### Environment Variables 
 ```bash
 SPRING_DATASOURCE_URL=jdbc:mysql://prod-db-host:3306/gigscore
 SPRING_DATASOURCE_USERNAME=prod_user
@@ -539,36 +531,6 @@ npm run build
 # Production build will be created at:
 # dist/
 ```
-
-### Deploy Backend (Docker)
-Create `Dockerfile` in backend directory:
-```dockerfile
-FROM eclipse-temurin:21-jdk-jammy
-WORKDIR /app
-COPY target/gigscore-0.0.1-SNAPSHOT.jar app.jar
-EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "app.jar"]
-```
-
-Build and run:
-```bash
-docker build -t gigscore:latest .
-docker run -p 8080:8080 \
-  -e SPRING_DATASOURCE_URL=jdbc:mysql://mysql-host:3306/gigscore \
-  -e SPRING_DATASOURCE_USERNAME=user \
-  -e SPRING_DATASOURCE_PASSWORD=password \
-  gigscore:latest
-```
-
-### Deploy Frontend (Static Hosting)
-All major platforms support serving static files from `dist/`:
-- **Netlify**: Drag and drop `dist/` folder
-- **Vercel**: Connect GitHub repo and deploy
-- **GitHub Pages**: Push `dist/` to `gh-pages` branch
-- **Azure Static Web Apps**: Deploy with Azure CLI
-- **AWS S3 + CloudFront**: Upload dist files to S3
-
----
 
 ##  Development
 
@@ -738,22 +700,6 @@ For issues, questions, or suggestions:
 
 ---
 
-##  Checklist Before Going Live
-
-- [ ] Database migration scripts created
-- [ ] Environment variables documented
-- [ ] CORS origins updated for production URLs
-- [ ] JWT secret key generated and secured
-- [ ] Database backups configured
-- [ ] Error logging implemented
-- [ ] Frontend built and tested
-- [ ] API endpoints tested with production data
-- [ ] Security audit completed
-- [ ] Performance testing completed
-- [ ] Deployment pipeline set up
-- [ ] Monitoring and alerts configured
-
----
 
 **Last Updated**: March 25, 2026
 **Maintainer**: GigScore Development Team
