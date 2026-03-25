@@ -2,20 +2,20 @@ import { NavLink } from "react-router-dom";
 
 function Sidebar() {
   const linkClass = ({ isActive }) =>
-    `flex items-center rounded-lg px-4 py-3 text-sm font-medium transition-all ${
+    `group relative flex items-center rounded-none px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.14em] transition-all ${
       isActive
-        ? "bg-blue-600 text-white shadow"
-        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
+        ? "bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-strong)]"
+        : "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text)]"
     }`;
 
   return (
-    <aside className="sticky top-16 hidden h-[calc(100vh-4rem)] w-64 shrink-0 border-r border-slate-200 bg-white p-4 lg:flex lg:flex-col dark:border-slate-800 dark:bg-slate-900">
-      <div className="mb-8 px-2">
-        <h1 className="text-2xl font-black tracking-tight text-blue-700">GigScore</h1>
-        <p className="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400">The Financial Architect</p>
+    <aside className="sticky top-16 hidden h-[calc(100vh-4rem)] w-72 shrink-0 border-r border-[var(--color-border)] bg-[var(--color-bg)] px-5 py-6 transition-colors duration-200 lg:flex lg:flex-col">
+      <div className="mb-10 border border-[var(--color-border)] bg-[var(--color-surface)] p-4 transition-colors duration-200">
+        <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-slate-100">GigScore</h1>
+        <p className="mt-1 text-[10px] uppercase tracking-[0.18em] text-slate-500">Premium Tier</p>
       </div>
 
-      <nav className="flex flex-col gap-2">
+      <nav className="flex flex-col gap-3">
         <NavLink to="/dashboard" className={linkClass}>
           Dashboard
         </NavLink>

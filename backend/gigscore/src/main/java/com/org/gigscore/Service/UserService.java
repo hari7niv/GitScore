@@ -1,17 +1,19 @@
 package com.org.gigscore.Service;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
+import com.org.gigscore.Config.JWTutill;
+import com.org.gigscore.DTO.CreateUserRequest;
 import com.org.gigscore.DTO.LoginDTO;
+import com.org.gigscore.DTO.LoginResponseDTO;
 import com.org.gigscore.DTO.UserDashboardResponse;
 import com.org.gigscore.Entity.User;
 import com.org.gigscore.Repository.UserRepository;
-
-import org.springframework.http.ResponseEntity;
-
-import com.org.gigscore.Config.JWTutill;
 
 
 
@@ -31,26 +33,84 @@ public class UserService {
         this.jwtUtil = jwtUtil;
     }
 
-    public User createUser(User user) {
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-        
-        return userRepository.save(user);
+    public ResponseEntity<LoginResponseDTO> createUser(CreateUserRequest request) {
+        if (request == null || isBlank(request.getName()) || isBlank(request.getEmail()) || isBlank(request.getPassword())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Name, email and password are required.");
+        }
+
+        String normalizedEmail = request.getEmail().trim().toLowerCase();
+        if (userRepository.findByEmail(normalizedEmail).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already exists.");
+        }
+
+        User user = new User();
+        user.setName(request.getName().trim());
+        user.setEmail(normalizedEmail);
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+
+        User savedUser = userRepository.save(user);
+        String token = jwtUtil.generateToken(savedUser.getEmail());
+
+        return ResponseEntity.ok(
+                LoginResponseDTO.builder()
+                        .userId(savedUser.getUserId())
+                        .name(savedUser.getName())
+                        .email(savedUser.getEmail())
+                        .token(token)
+                        .build());
     }
 
     public UserDashboardResponse getUserDashboard(Long userId) {
         return gigDataService.getUserDashboard(userId);
     }
 
-    public ResponseEntity<String> Login(LoginDTO request) {
-        
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        if(!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            return ResponseEntity.status(401).body("Invalid credentials");
+    public ResponseEntity<LoginResponseDTO> Login(LoginDTO request) {
+        if (request == null || isBlank(request.getEmail()) || isBlank(request.getPassword())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email and password are required.");
         }
+
+        String normalizedEmail = request.getEmail().trim().toLowerCase();
+
+        User user = userRepository.findByEmail(normalizedEmail)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials"));
+
+        String rawPassword = request.getPassword();
+        String storedPassword = user.getPassword();
+
+        boolean authenticated = false;
+
+        if (!isBlank(storedPassword)) {
+            try {
+                authenticated = passwordEncoder.matches(rawPassword, storedPassword);
+            } catch (IllegalArgumentException exception) {
+                authenticated = false;
+            }
+
+            // Backward compatibility for legacy plaintext passwords.
+            // On successful legacy auth, upgrade storage to BCrypt.
+            if (!authenticated && rawPassword.equals(storedPassword)) {
+                authenticated = true;
+                user.setPassword(passwordEncoder.encode(rawPassword));
+                userRepository.save(user);
+            }
+        }
+
+        if (!authenticated) {
+            return ResponseEntity.status(401).build();
+        }
+
         String token = jwtUtil.generateToken(user.getEmail());
-        return ResponseEntity.ok(token);
+        return ResponseEntity.ok(
+                LoginResponseDTO.builder()
+                        .userId(user.getUserId())
+                        .name(user.getName())
+                        .email(user.getEmail())
+                        .token(token)
+                        .build());
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
     }
     
 }

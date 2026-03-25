@@ -7,8 +7,9 @@ import CreateUser from "./pages/CreateUser";
 import Dashboard from "./pages/Dashboard";
 import AddGig from "./pages/AddGig";
 import Score from "./pages/Score";
+import AiChatWidget from "./components/AiChatWidget";
 
-function MainLayout({ currentUser, onLogout, isDarkMode, onToggleDarkMode, onUserAuthenticated }) {
+function MainLayout({ currentUser, onLogout, isDarkMode, onSetDarkMode, onUserAuthenticated }) {
   const location = useLocation();
   const isAuthPage = location.pathname === "/login" || location.pathname === "/register";
 
@@ -26,12 +27,12 @@ function MainLayout({ currentUser, onLogout, isDarkMode, onToggleDarkMode, onUse
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+    <div className="min-h-screen bg-[var(--color-bg)] text-[var(--color-text)] transition-colors duration-200">
       <Navbar
         userName={currentUser.name}
         onLogout={onLogout}
         isDarkMode={isDarkMode}
-        onToggleDarkMode={onToggleDarkMode}
+        onSetDarkMode={onSetDarkMode}
       />
       <div className="flex min-h-[calc(100vh-4rem)] items-stretch">
         <Sidebar />
@@ -63,12 +64,39 @@ function App() {
       : null;
   });
 
-  const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem("gigscoreDarkMode") === "true");
+  const [resolvedDarkMode, setResolvedDarkMode] = useState(() => {
+    const storedTheme = localStorage.getItem("gigscoreTheme");
+    const initialDarkMode = storedTheme === "dark";
+
+    if (typeof document !== "undefined") {
+      document.documentElement.classList.toggle("dark", initialDarkMode);
+    }
+
+    if (storedTheme === "dark" || storedTheme === "light") {
+      return initialDarkMode;
+    }
+
+    const legacyStored = localStorage.getItem("gigscoreDarkMode");
+    if (legacyStored !== null) {
+      const legacyDarkMode = legacyStored === "true";
+      if (typeof document !== "undefined") {
+        document.documentElement.classList.toggle("dark", legacyDarkMode);
+      }
+      return legacyDarkMode;
+    }
+
+    return false;
+  });
 
   useEffect(() => {
-    document.documentElement.classList.toggle("dark", isDarkMode);
-    localStorage.setItem("gigscoreDarkMode", String(isDarkMode));
-  }, [isDarkMode]);
+    document.documentElement.classList.toggle("dark", resolvedDarkMode);
+    localStorage.setItem("gigscoreTheme", resolvedDarkMode ? "dark" : "light");
+    localStorage.setItem("gigscoreDarkMode", String(resolvedDarkMode));
+  }, [resolvedDarkMode]);
+
+  const handleSetDarkMode = (nextValue) => {
+    setResolvedDarkMode(Boolean(nextValue));
+  };
 
   const handleUserAuthenticated = (userDashboard) => {
     const nextUser = {
@@ -77,6 +105,10 @@ function App() {
       email: userDashboard.email,
     };
 
+    if (userDashboard.token) {
+      localStorage.setItem("gigscoreToken", userDashboard.token);
+    }
+
     localStorage.setItem("gigscoreUserId", String(nextUser.userId));
     localStorage.setItem("gigscoreUserName", nextUser.name || "");
     localStorage.setItem("gigscoreUserEmail", nextUser.email || "");
@@ -84,6 +116,7 @@ function App() {
   };
 
   const handleLogout = () => {
+    localStorage.removeItem("gigscoreToken");
     localStorage.removeItem("gigscoreUserId");
     localStorage.removeItem("gigscoreUserName");
     localStorage.removeItem("gigscoreUserEmail");
@@ -100,13 +133,14 @@ function App() {
             <MainLayout
               currentUser={currentUser}
               onLogout={handleLogout}
-              isDarkMode={isDarkMode}
-              onToggleDarkMode={() => setIsDarkMode((prev) => !prev)}
+              isDarkMode={resolvedDarkMode}
+              onSetDarkMode={handleSetDarkMode}
               onUserAuthenticated={handleUserAuthenticated}
             />
           }
         />
       </Routes>
+      <AiChatWidget />
     </BrowserRouter>
   );
 }

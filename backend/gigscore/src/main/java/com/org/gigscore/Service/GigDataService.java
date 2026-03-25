@@ -1,10 +1,11 @@
 package com.org.gigscore.Service;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.org.gigscore.DTO.GigEventRequest;
 import com.org.gigscore.DTO.GigSummaryResponse;
@@ -37,25 +38,21 @@ public class GigDataService {
                 this.activityService = activityService;
     }
 
-    public UserDashboardResponse addGig(GigEventRequest request){
+        @Transactional
+        public UserDashboardResponse addGig(GigEventRequest request){
+
+                if (request == null || request.getUserId() == null || request.getPlatform() == null || request.getPlatform().isBlank()
+                                || request.getAmount() == null || request.getRating() == null) {
+                        throw new RuntimeException("userId, platform, amount and rating are required");
+                }
 
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        Optional<GigData> existingData =
-                gigDataRepository.findByUserAndPlatform(user, request.getPlatform());
+                String normalizedPlatform = request.getPlatform().trim();
 
-        GigData data = existingData.orElseGet(() -> {
-            GigData g = new GigData();
-            g.setUser(user);
-            g.setPlatform(request.getPlatform());
-            g.setTotalEarnings(0.0);
-            g.setJobsCompleted(0);
-            g.setAvgRating(0.0);
-            g.setActiveDays(0);
-            return g;
-        });
-    
+                GigData data = resolveOrCreatePlatformAggregate(user, normalizedPlatform);
+
         data.setTotalEarnings(data.getTotalEarnings() + request.getAmount());
         data.setJobsCompleted(data.getJobsCompleted() + 1);
         data.setActiveDays(data.getActiveDays() + 1);
@@ -68,13 +65,61 @@ public class GigDataService {
         data.setAvgRating(newAvg);
 
         gigDataRepository.save(data);
-        activityService.recordGigAdded(user, request.getPlatform(), request.getAmount(), request.getRating());
+        activityService.recordGigAdded(user, normalizedPlatform, request.getAmount(), request.getRating());
 
         scoreService.calculateAndPersistScore(user);
 
         return getUserDashboard(user.getUserId());
 
     }
+
+        private GigData resolveOrCreatePlatformAggregate(User user, String platform) {
+                List<GigData> rows = new ArrayList<>(gigDataRepository.findAllByUserAndPlatform(user, platform));
+
+                if (rows.isEmpty()) {
+                        GigData g = new GigData();
+                        g.setUser(user);
+                        g.setPlatform(platform);
+                        g.setTotalEarnings(0.0);
+                        g.setJobsCompleted(0);
+                        g.setAvgRating(0.0);
+                        g.setActiveDays(0);
+                        return g;
+                }
+
+                GigData primary = rows.get(0);
+                if (rows.size() == 1) {
+                        return primary;
+                }
+
+                double mergedEarnings = 0.0;
+                int mergedJobs = 0;
+                int mergedActiveDays = 0;
+                double weightedRatingTotal = 0.0;
+
+                for (GigData row : rows) {
+                        double earnings = row.getTotalEarnings() == null ? 0.0 : row.getTotalEarnings();
+                        int jobs = row.getJobsCompleted() == null ? 0 : row.getJobsCompleted();
+                        int activeDays = row.getActiveDays() == null ? 0 : row.getActiveDays();
+                        double avgRating = row.getAvgRating() == null ? 0.0 : row.getAvgRating();
+
+                        mergedEarnings += earnings;
+                        mergedJobs += jobs;
+                        mergedActiveDays += activeDays;
+                        weightedRatingTotal += avgRating * jobs;
+                }
+
+                primary.setTotalEarnings(mergedEarnings);
+                primary.setJobsCompleted(mergedJobs);
+                primary.setActiveDays(mergedActiveDays);
+                primary.setAvgRating(mergedJobs > 0 ? weightedRatingTotal / mergedJobs : 0.0);
+
+                for (int i = 1; i < rows.size(); i++) {
+                        gigDataRepository.delete(rows.get(i));
+                }
+
+                return primary;
+        }
 
     public UserDashboardResponse getUserDashboard(Long userId) {
         User user = userRepository.findById(userId)

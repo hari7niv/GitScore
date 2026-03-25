@@ -3,6 +3,18 @@ import StatCard from "../components/StatCard";
 import { getUserDashboard } from "../services/userService";
 import { getRecentActivities } from "../services/activityService";
 
+const getRatingTone = (rating) => {
+  if (rating >= 4.7) return "text-slate-900 dark:text-slate-100";
+  if (rating >= 4.0) return "text-slate-700 dark:text-slate-300";
+  return "text-slate-500 dark:text-slate-400";
+};
+
+const getAmountTone = (amount) => {
+  if (amount >= 700) return "text-slate-900 dark:text-slate-100";
+  if (amount >= 300) return "text-slate-700 dark:text-slate-300";
+  return "text-slate-500 dark:text-slate-400";
+};
+
 function Dashboard({ userId }) {
   const [dashboard, setDashboard] = useState(null);
   const [activities, setActivities] = useState([]);
@@ -40,51 +52,101 @@ function Dashboard({ userId }) {
   }
 
   return (
-    <section>
-      <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Dashboard</h1>
-      <p className="mt-2 text-slate-600 dark:text-slate-300">Live metrics fetched from backend aggregation APIs.</p>
+    <section className="space-y-8">
+      <div className="grid gap-6 border-b border-slate-200 pb-8 dark:border-slate-800 md:grid-cols-[minmax(0,1fr)_260px]">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">System Status: Optimal</p>
+          <h1 className="mt-2 text-5xl font-black leading-[0.92] tracking-tight text-slate-900 dark:text-slate-100 md:text-6xl">
+            Performance
+            <br />
+            Architecture.
+          </h1>
+        </div>
+        <p className="self-start pt-1 text-right text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+          A holistic view of your operational efficiency and revenue streams.
+        </p>
+      </div>
 
-      <div className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
         <StatCard
           title="Total Earnings"
           value={`$${Number(dashboard.totalEarnings || 0).toFixed(2)}`}
-          subtitle="Aggregated across connected platforms"
+          subtitle="Revenue"
+          icon="+12%"
+          tone="accent"
+          priority="primary"
         />
-        <StatCard title="Jobs Completed" value={dashboard.jobsCompleted || 0} subtitle="Total completed gigs" />
+        <StatCard
+          title="Jobs Completed"
+          value={dashboard.jobsCompleted || 0}
+          subtitle="Execution"
+          icon="Running"
+          tone="success"
+        />
         <StatCard
           title="Average Rating"
           value={Number(dashboard.avgRating || 0).toFixed(2)}
-          subtitle="Weighted platform rating"
+          subtitle="Quality"
+          icon="Peak"
+          tone="warning"
         />
-        <StatCard title="Activity Days" value={dashboard.activeDays || 0} subtitle="Total active work days" />
+        <StatCard
+          title="Activity Days"
+          value={dashboard.activeDays || 0}
+          subtitle="Consistency"
+          icon="Streak"
+          tone="neutral"
+        />
       </div>
 
-      <div className="mt-10 rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">Recent Activity</h2>
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
+      <div className="border border-[var(--color-border)] bg-[var(--color-surface)] p-6 transition-colors duration-200 md:p-7">
+        <div className="mb-5 flex items-center justify-between">
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Recent Activity</h2>
+          <p className="text-[10px] uppercase tracking-[0.18em] text-slate-500">Latest events</p>
+        </div>
+
         {activities.length === 0 ? (
-          <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">No recent activity yet.</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">No recent activity yet.</p>
         ) : (
-          <ul className="mt-4 space-y-3">
+          <ol className="relative space-y-4 border-l border-slate-200 pl-5 dark:border-slate-800">
             {activities.map((activity) => (
               <li
                 key={activity.id}
-                className="flex flex-col gap-1 rounded-lg border border-slate-100 bg-slate-50 p-3 text-sm dark:border-slate-800 dark:bg-slate-950"
+                className="relative border border-[var(--color-border)] bg-[var(--color-surface-muted)] p-4 text-sm transition-colors duration-200"
               >
-                <p className="font-semibold text-slate-800 dark:text-slate-100">
-                  {activity.platform} - {activity.action}
-                </p>
-                <p className="text-slate-600 dark:text-slate-300">
-                  {activity.amount !== null && activity.amount !== undefined
-                    ? `Amount: $${Number(activity.amount).toFixed(2)}`
-                    : "Amount: N/A"}
-                </p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {new Date(activity.timestamp).toLocaleString()}
-                </p>
+                <span className="absolute -left-[28px] top-5 h-3 w-3 rounded-full border-2 border-[var(--color-surface)] bg-slate-900 dark:bg-slate-100" />
+
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="font-semibold text-slate-900 dark:text-slate-100">
+                    {activity.platform} - {activity.action}
+                  </p>
+                  <p className={`text-sm font-bold ${getAmountTone(Number(activity.amount || 0))}`}>
+                    {activity.amount !== null && activity.amount !== undefined
+                      ? `$${Number(activity.amount).toFixed(2)}`
+                      : "N/A"}
+                  </p>
+                </div>
+
+                <div className="mt-1 flex items-center justify-between gap-3">
+                  <p className="text-slate-500 dark:text-slate-400">{new Date(activity.timestamp).toLocaleString()}</p>
+                  <p className={`font-semibold ${getRatingTone(Number(activity.rating || 0))}`}>
+                    Rating {activity.rating !== null && activity.rating !== undefined ? Number(activity.rating).toFixed(1) : "N/A"}
+                  </p>
+                </div>
               </li>
             ))}
-          </ul>
+          </ol>
         )}
+      </div>
+
+      <aside className="border border-[var(--color-border)] bg-[var(--color-surface)] p-6 transition-colors duration-200">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Project Focus</p>
+        <h3 className="mt-3 text-4xl font-black leading-none tracking-tight text-slate-900 dark:text-slate-100">Reliability</h3>
+        <p className="mt-4 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+          Your current operating pattern indicates stable throughput and reliable completion trends.
+        </p>
+      </aside>
       </div>
     </section>
   );

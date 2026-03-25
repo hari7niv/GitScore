@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-function Navbar({ userName, onLogout, isDarkMode, onToggleDarkMode }) {
+function Navbar({ userName, onLogout, isDarkMode, onSetDarkMode }) {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const profileRef = useRef(null);
@@ -31,13 +31,14 @@ function Navbar({ userName, onLogout, isDarkMode, onToggleDarkMode }) {
   };
 
   return (
-    <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur dark:border-slate-800 dark:bg-slate-900/90">
+    <header className="sticky top-0 z-30 border-b border-[var(--color-border)] bg-[color:var(--color-bg)]/95 backdrop-blur transition-colors duration-200">
       <div className="flex h-16 items-center justify-end gap-3 px-4 md:px-6">
         <button
           type="button"
-          onClick={onToggleDarkMode}
-          className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
-          aria-label="Toggle dark mode"
+          onClick={() => onSetDarkMode(!isDarkMode)}
+          className="inline-flex h-10 w-10 items-center justify-center rounded-none border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text)]"
+          aria-label={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
+          title={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
         >
           {isDarkMode ? (
             <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
@@ -49,27 +50,26 @@ function Navbar({ userName, onLogout, isDarkMode, onToggleDarkMode }) {
               <path d="M21 12.79A9 9 0 1 1 11.21 3c.03.33.05.66.05 1a8 8 0 0 0 8 8c.34 0 .67-.02 1-.05Z" />
             </svg>
           )}
-          <span>{isDarkMode ? "Light" : "Dark"}</span>
         </button>
 
         <div ref={profileRef} className="relative">
           <button
             type="button"
             onClick={() => setIsOpen((prev) => !prev)}
-            className="flex items-center gap-3 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"
+            className="flex items-center gap-3 rounded-none border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm transition-colors hover:bg-[var(--color-surface-muted)]"
           >
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 font-bold text-blue-700 dark:bg-blue-900 dark:text-blue-100">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-900 font-bold text-white dark:bg-slate-100 dark:text-slate-900">
               {initials}
             </div>
-            <p className="font-semibold text-slate-800 dark:text-slate-100">{userName || "User"}</p>
+            <p className="font-semibold text-slate-900 dark:text-slate-100">{userName || "User"}</p>
           </button>
 
           {isOpen ? (
-            <div className="absolute right-0 z-40 mt-2 w-36 rounded-lg border border-slate-200 bg-white p-2 shadow-lg dark:border-slate-700 dark:bg-slate-900">
+            <div className="absolute right-0 z-40 mt-2 w-36 rounded-none border border-[var(--color-border)] bg-[var(--color-surface)] p-2 shadow-sm">
               <button
                 type="button"
                 onClick={handleLogout}
-                className="w-full rounded-md px-3 py-2 text-left text-sm font-semibold text-red-600 transition hover:bg-slate-100 dark:text-red-400 dark:hover:bg-slate-800"
+                className="w-full rounded-none px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.14em] text-red-600 transition hover:bg-[var(--color-surface-muted)] dark:text-red-400"
               >
                 Logout
               </button>

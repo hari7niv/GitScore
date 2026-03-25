@@ -1,13 +1,24 @@
 package com.org.gigscore.Config;
 
-import org.springframework.stereotype.Component;
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
-import io.jsonwebtoken.security.Keys;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
+
 @Component
 public class JWTutill {
     private final long expirationTime=3600000; // 1 hour
-    private final Key key= Keys.secretKeyFor(io.jsonwebtoken.SignatureAlgorithm.HS256);
+
+    private final Key key;
+
+    public JWTutill(@Value("${jwt.secret}") String jwtSecret) {
+        this.key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
+    }
+
     public String generateToken(String email) {
         return Jwts.builder()
                 .setSubject(email)
@@ -17,18 +28,22 @@ public class JWTutill {
                 .compact();
     }
 
+    public String extractEmail(String token) {
+        try {
+            return Jwts.parserBuilder()
+                    .setSigningKey(key)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody()
+                    .getSubject();
+        } catch (Exception exception) {
+            return null;
+        }
+    }
+
     public boolean validateJwtToken(String token){
         try{
-            
-            Jwts.parserBuilder()
-                .setSigningKey(key)
-                .build()
-                .parseClaimsJws(token)
-                .getBody()
-                .getSubject();
-
-
-            return true;
+            return extractEmail(token) != null;
         }
         catch(Exception e){
             return false;

@@ -1,5 +1,8 @@
 package com.org.gigscore.Service;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 
 import com.org.gigscore.DTO.ScoreResponse;
@@ -10,6 +13,24 @@ import com.org.gigscore.Service.UserMetricsService.UserAggregateMetrics;
 
 @Service
 public class GigScoreService {
+    private static final double MAX_SCORE = 100.0;
+    private static final double EARNINGS_TARGET = 5000.0;
+    private static final double JOBS_TARGET = 100.0;
+    private static final double ACTIVE_DAYS_TARGET = 30.0;
+
+    private static final double WEIGHT_EARNINGS = 0.35;
+    private static final double WEIGHT_JOBS = 0.25;
+    private static final double WEIGHT_RATING = 0.30;
+    private static final double WEIGHT_ACTIVE_DAYS = 0.10;
+
+    // Exponents used in score normalization.
+    // a < 1: reward early earnings, b < 1: reward early jobs,
+    // c > 1: stricter on ratings, d ~= 1: neutral for consistency.
+    private static final double EXP_EARNINGS = 0.70;
+    private static final double EXP_JOBS = 0.65;
+    private static final double EXP_RATING = 1.40;
+    private static final double EXP_ACTIVE_DAYS = 1.00;
+
     final GigScoreRepository gigScoreRepository;
     final UserMetricsService userMetricsService;
 
@@ -22,7 +43,7 @@ public class GigScoreService {
         UserAggregateMetrics metrics = userMetricsService.calculateAggregates(user);
         double score = calculateScoreValue(metrics);
 
-        GigScore gigScore = gigScoreRepository.findByUser(user).orElse(new GigScore());
+        GigScore gigScore = resolveOrCreateUserGigScore(user);
         gigScore.setUser(user);
         gigScore.setScore(score);
         gigScoreRepository.save(gigScore);
@@ -34,17 +55,55 @@ public class GigScoreService {
     }
 
     public double calculateScoreValue(UserAggregateMetrics metrics) {
-        double score = 0;
-        score += (metrics.totalEarnings() / 1000) * 0.3;
-        score += metrics.jobsCompleted() * 0.2;
-        score += metrics.avgRating() * 20;
-        score += metrics.activeDays() * 0.1;
-        return score;
+        double earningsComponent = Math.pow(normalizedComponent(metrics.totalEarnings(), EARNINGS_TARGET), EXP_EARNINGS)
+            * WEIGHT_EARNINGS;
+        double jobsComponent = Math.pow(normalizedComponent(metrics.jobsCompleted(), JOBS_TARGET), EXP_JOBS)
+            * WEIGHT_JOBS;
+        double ratingComponent = Math.pow(normalizedComponent(clamp(metrics.avgRating(), 0.0, 5.0), 5.0), EXP_RATING)
+            * WEIGHT_RATING;
+        double activeDaysComponent = Math.pow(normalizedComponent(metrics.activeDays(), ACTIVE_DAYS_TARGET),
+            EXP_ACTIVE_DAYS) * WEIGHT_ACTIVE_DAYS;
+
+        double score = (earningsComponent + jobsComponent + ratingComponent + activeDaysComponent) * MAX_SCORE;
+        return roundToTwoDecimals(score);
     }
 
     public ScoreResponse getScoreForUser(User user) {
         return calculateAndPersistScore(user);
 
+    }
+
+    private double normalizedComponent(double value, double target) {
+        if (target <= 0) {
+            return 0;
+        }
+        return clamp(value / target, 0.0, 1.0);
+    }
+
+    private double clamp(double value, double min, double max) {
+        return Math.max(min, Math.min(max, value));
+    }
+
+    private double roundToTwoDecimals(double value) {
+        return Math.round(value * 100.0) / 100.0;
+    }
+
+    private GigScore resolveOrCreateUserGigScore(User user) {
+        List<GigScore> scores = new ArrayList<>(gigScoreRepository.findAllByUser(user));
+        if (scores.isEmpty()) {
+            return new GigScore();
+        }
+
+        GigScore primary = scores.get(0);
+        if (scores.size() == 1) {
+            return primary;
+        }
+
+        for (int i = 1; i < scores.size(); i++) {
+            gigScoreRepository.delete(scores.get(i));
+        }
+
+        return primary;
     }
 
 }

@@ -69,14 +69,23 @@ function AddGig({ userId }) {
 
   return (
     <section className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">Add Gig Platform</h1>
-        <p className="mt-2 text-slate-600 dark:text-slate-300">Connect platforms and send gig activity to backend.</p>
+      <div className="grid gap-6 border-b border-slate-200 pb-8 dark:border-slate-800 md:grid-cols-[minmax(0,1fr)_260px]">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Integrations</p>
+          <h1 className="mt-2 text-5xl font-black leading-[0.92] tracking-tight text-slate-900 dark:text-slate-100 md:text-6xl">
+            Connect Your
+            <br />
+            Workforce Ecosystem.
+          </h1>
+        </div>
+        <p className="self-start pt-1 text-right text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+          Synchronize earnings, ratings, and operational performance into one unified score.
+        </p>
       </div>
 
-      {loading ? <p className="text-sm text-slate-600 dark:text-slate-300">Loading platform status...</p> : null}
+      {loading ? <p className="text-sm text-slate-500 dark:text-slate-300">Loading platform status...</p> : null}
 
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
         {PLATFORMS.map((platform) => (
           <PlatformCard
             key={platform}
@@ -90,10 +99,10 @@ function AddGig({ userId }) {
       {selectedPlatform ? (
         <form
           onSubmit={handleSubmit}
-          className="max-w-xl rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+          className="max-w-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 transition-colors duration-200"
         >
-          <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">Connect {selectedPlatform}</h2>
-          <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">Submit gig details to the backend.</p>
+          <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Connect {selectedPlatform}</h2>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Submit your latest gig details to update score and dashboard metrics.</p>
 
           <div className="mt-5 grid gap-4 md:grid-cols-2">
             <div>
@@ -108,7 +117,7 @@ function AddGig({ userId }) {
                 value={amount}
                 onChange={(event) => setAmount(event.target.value)}
                 required
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 outline-none ring-blue-200 transition focus:ring dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                className="w-full border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2.5 text-slate-900 outline-none ring-slate-300 transition focus:ring dark:text-slate-100"
               />
             </div>
 
@@ -125,22 +134,22 @@ function AddGig({ userId }) {
                 value={rating}
                 onChange={(event) => setRating(event.target.value)}
                 required
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 outline-none ring-blue-200 transition focus:ring dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                className="w-full border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2.5 text-slate-900 outline-none ring-slate-300 transition focus:ring dark:text-slate-100"
               />
             </div>
           </div>
 
-          <div className="mt-5 flex gap-3">
+          <div className="mt-6 grid gap-3 sm:grid-cols-2">
             <button
               type="submit"
-              className="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-blue-700"
+              className="w-full border border-slate-900 bg-slate-900 px-5 py-2.5 text-sm font-bold uppercase tracking-[0.14em] text-white transition hover:bg-slate-700 dark:border-slate-100 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-300"
             >
               Submit Gig
             </button>
             <button
               type="button"
               onClick={() => setSelectedPlatform("")}
-              className="rounded-lg border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+              className="w-full border border-slate-300 px-5 py-2.5 text-sm font-semibold uppercase tracking-[0.14em] text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
             >
               Cancel
             </button>
@@ -150,8 +159,10 @@ function AddGig({ userId }) {
 
       {status.message ? (
         <p
-          className={`rounded-lg px-3 py-2 text-sm font-medium ${
-            status.type === "success" ? "bg-emerald-100 text-emerald-800" : "bg-red-100 text-red-700"
+          className={`border px-3 py-2 text-sm font-medium ${
+            status.type === "success"
+              ? "border-slate-300 bg-slate-100 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+              : "border-rose-300 bg-rose-50 text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-300"
           }`}
         >
           {status.message}
